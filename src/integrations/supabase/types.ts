@@ -14,7 +14,115 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          note: string
+          paid_at: string
+          unit_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          note?: string
+          paid_at?: string
+          unit_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          note?: string
+          paid_at?: string
+          unit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      unit_groups: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      units: {
+        Row: {
+          block: number
+          buyer_name: string
+          created_at: string
+          floor: number
+          group_id: string | null
+          id: string
+          label: string
+          note: string
+          price_per_sqm: number
+          slot: number
+          sqm: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          block: number
+          buyer_name?: string
+          created_at?: string
+          floor: number
+          group_id?: string | null
+          id?: string
+          label: string
+          note?: string
+          price_per_sqm?: number
+          slot: number
+          sqm?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          block?: number
+          buyer_name?: string
+          created_at?: string
+          floor?: number
+          group_id?: string | null
+          id?: string
+          label?: string
+          note?: string
+          price_per_sqm?: number
+          slot?: number
+          sqm?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "units_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "unit_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
