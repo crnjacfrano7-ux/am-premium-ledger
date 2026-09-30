@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { eur, sqm } from "@/lib/format";
+import { sqm } from "@/lib/format";
 import { paidFor, unitTotal, type Payment, type Unit } from "@/lib/units";
 import { Link2, Trash2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -17,9 +17,9 @@ type Props = {
 };
 
 function statusClasses(u: Unit, pct: number) {
-  if (u.status === "prodan") return "bg-navy text-primary-foreground border-navy";
-  if (u.status === "rezervisan" || pct > 0) return "bg-gold-soft border-gold";
-  return "bg-free";
+  if (u.status === "prodan") return "floor-unit-sold";
+  if (u.status === "rezervisan" || pct > 0) return "floor-unit-reserved";
+  return "floor-unit-free";
 }
 
 export function BuildingPlan({
@@ -36,77 +36,109 @@ export function BuildingPlan({
   const floors = [...new Set(units.map((u) => u.floor))].sort((a, b) => b - a);
 
   return (
-    <div className="space-y-6">
+    <div className="building-elevation animate-rise">
+      <div className="building-roof" aria-hidden="true">
+        <span />
+        <span />
+        <span />
+      </div>
       {floors.map((floor, i) => {
         const floorUnits = units.filter((u) => u.floor === floor);
-        const blocks = [...new Set(floorUnits.map((u) => u.block))].sort((a, b) => a - b);
+        const ordered = [...floorUnits].sort((a, b) => a.block - b.block || a.slot - b.slot);
+        const planUnits = ordered.slice(0, 5);
+        const extraUnits = ordered.slice(5);
         return (
           <section
             key={floor}
-            className="animate-rise surface p-4 sm:p-5"
+            className="floor-plan"
             style={{ animationDelay: `${i * 60}ms` }}
           >
-            <header className="mb-3 flex items-center justify-between">
-              <h2 className="font-display text-xl">{floor}. sprat</h2>
-              <div className="flex items-center gap-1">
-                <Button variant="ghost" size="sm" onClick={() => onAddUnit(floor)} aria-label="Dodaj stan">
+            <div className="floor-number" aria-label={`${floor}. sprat`}>
+              <strong>{floor}</strong>
+              <span>SPRAT</span>
+            </div>
+
+            <div className="floor-blueprint">
+              {planUnits.map((u, index) => {
+                const total = unitTotal(u);
+                const paid = paidFor(u.id, payments);
+                const pct = total > 0 ? Math.min(100, (paid / total) * 100) : 0;
+                const picked = joinSelection.includes(u.id);
+                const positions = ["left-top", "left-bottom", "center-top", "right-top", "right-bottom"];
+                return (
+                  <Button
+                    key={u.id}
+                    type="button"
+                    variant="ghost"
+                    onClick={() => (joinMode ? onToggleJoin(u.id) : onSelect(u))}
+                    className={cn(
+                      "floor-unit",
+                      positions[index],
+                      statusClasses(u, pct),
+                      activeId === u.id && !joinMode && "floor-unit-active",
+                      picked && "floor-unit-picked",
+                    )}
+                    aria-label={`Stan ${u.label}, ${sqm(u.sqm)}, plaćeno ${pct.toFixed(0)}%`}
+                  >
+                    <span className="floor-unit-label">{u.label}</span>
+                    <span className="floor-unit-area">{sqm(u.sqm)}</span>
+                    <span className="floor-unit-progress" aria-hidden="true">
+                      <span style={{ width: `${pct}%` }} />
+                    </span>
+                    {u.group_id ? <Link2 className="floor-unit-link" /> : null}
+                  </Button>
+                );
+              })}
+
+              <div className="stair-core" aria-hidden="true">
+                <span className="stair-lines" />
+                <span className="lift-shaft" />
+                <span className="corridor-line" />
+              </div>
+
+              <div className="balcony balcony-left" aria-hidden="true" />
+              <div className="balcony balcony-right" aria-hidden="true" />
+            </div>
+
+            <div className="floor-actions">
+              {extraUnits.map((u) => {
+                const total = unitTotal(u);
+                const paid = paidFor(u.id, payments);
+                const pct = total > 0 ? Math.min(100, (paid / total) * 100) : 0;
+                return (
+                  <Button
+                    key={u.id}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => (joinMode ? onToggleJoin(u.id) : onSelect(u))}
+                    className={cn(
+                      "floor-extra-unit",
+                      activeId === u.id && !joinMode && "border-gold",
+                      joinSelection.includes(u.id) && "border-primary",
+                    )}
+                  >
+                    {u.label} · {sqm(u.sqm)} · {pct.toFixed(0)}%
+                  </Button>
+                );
+              })}
+              <div className="ml-auto flex items-center gap-1">
+                <Button variant="ghost" size="icon" onClick={() => onAddUnit(floor)} aria-label="Dodaj stan">
                   <Plus className="size-4" />
                 </Button>
                 <Button
                   variant="ghost"
-                  size="sm"
+                  size="icon"
                   onClick={() => onDeleteFloor(floor)}
                   aria-label="Obriši sprat"
                 >
                   <Trash2 className="size-4" />
                 </Button>
               </div>
-            </header>
-
-            <div className="grid gap-3 sm:grid-cols-3">
-              {blocks.map((block) => (
-                <div key={block} className="grid gap-2">
-                  {floorUnits
-                    .filter((u) => u.block === block)
-                    .sort((a, b) => a.slot - b.slot)
-                    .map((u) => {
-                      const total = unitTotal(u);
-                      const paid = paidFor(u.id, payments);
-                      const pct = total > 0 ? Math.min(100, (paid / total) * 100) : 0;
-                      const picked = joinSelection.includes(u.id);
-                      return (
-                        <button
-                          key={u.id}
-                          type="button"
-                          onClick={() => (joinMode ? onToggleJoin(u.id) : onSelect(u))}
-                          className={cn(
-                            "unit-cell overflow-hidden px-3 py-3 text-left",
-                            statusClasses(u, pct),
-                            activeId === u.id && !joinMode && "ring-2 ring-gold ring-offset-2",
-                            picked && "ring-2 ring-navy ring-offset-2",
-                          )}
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="font-display text-lg leading-none">{u.label}</span>
-                            {u.group_id ? <Link2 className="size-3.5 opacity-70" /> : null}
-                          </div>
-                          <div className="mt-1 text-[11px] opacity-75">{sqm(u.sqm)}</div>
-                          <div className="mt-2 text-xs font-medium tabular-nums">{eur(total)}</div>
-                          <div className="mt-2 h-1 w-full rounded-full bg-current/15">
-                            <div
-                              className="h-1 rounded-full bg-current transition-all duration-700"
-                              style={{ width: `${pct}%` }}
-                            />
-                          </div>
-                        </button>
-                      );
-                    })}
-                </div>
-              ))}
             </div>
           </section>
         );
       })}
+      <div className="building-base" aria-hidden="true" />
     </div>
   );
 }
