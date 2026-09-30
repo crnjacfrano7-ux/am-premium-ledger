@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label";
 import logo from "@/assets/am-premium-logo.jpg.asset.json";
 
 export const Route = createFileRoute("/auth")({
-  ssr: false,
   head: () => ({
     meta: [
       { title: "Prijava · AM Premium" },

@@ -82,8 +82,8 @@ export function UnitPanel({
               max={250}
               step={0.5}
               value={[area]}
-              onValueChange={(v) => setArea(v[0])}
-              onValueCommit={(v) => onPatch({ sqm: v[0] })}
+              onValueChange={(v) => setArea(v[0] ?? area)}
+              onValueCommit={(v) => onPatch({ sqm: v[0] ?? area })}
             />
           </div>
           <div>
@@ -97,8 +97,8 @@ export function UnitPanel({
               max={5000}
               step={10}
               value={[price]}
-              onValueChange={(v) => setPrice(v[0])}
-              onValueCommit={(v) => onPatch({ price_per_sqm: v[0] })}
+              onValueChange={(v) => setPrice(v[0] ?? price)}
+              onValueCommit={(v) => onPatch({ price_per_sqm: v[0] ?? price })}
             />
           </div>
         </div>
