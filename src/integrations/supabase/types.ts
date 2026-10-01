@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      buildings: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          position: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name?: string
+          position?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          position?: number
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           amount: number
@@ -70,9 +91,14 @@ export type Database = {
       units: {
         Row: {
           block: number
+          building_id: string | null
           buyer_name: string
           created_at: string
           floor: number
+          grid_h: number | null
+          grid_w: number | null
+          grid_x: number | null
+          grid_y: number | null
           group_id: string | null
           id: string
           label: string
@@ -85,9 +111,14 @@ export type Database = {
         }
         Insert: {
           block: number
+          building_id?: string | null
           buyer_name?: string
           created_at?: string
           floor: number
+          grid_h?: number | null
+          grid_w?: number | null
+          grid_x?: number | null
+          grid_y?: number | null
           group_id?: string | null
           id?: string
           label: string
@@ -100,9 +131,14 @@ export type Database = {
         }
         Update: {
           block?: number
+          building_id?: string | null
           buyer_name?: string
           created_at?: string
           floor?: number
+          grid_h?: number | null
+          grid_w?: number | null
+          grid_x?: number | null
+          grid_y?: number | null
           group_id?: string | null
           id?: string
           label?: string
@@ -114,6 +150,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "units_building_id_fkey"
+            columns: ["building_id"]
+            isOneToOne: false
+            referencedRelation: "buildings"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "units_group_id_fkey"
             columns: ["group_id"]
