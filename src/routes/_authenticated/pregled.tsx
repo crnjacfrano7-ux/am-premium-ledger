@@ -8,7 +8,11 @@ import { UnitPanel } from "@/components/UnitPanel";
 import logo from "@/assets/am-premium-logo.jpg.asset.json";
 import { eur } from "@/lib/format";
 import {
+  addBuilding,
   addFloor,
+  deleteBuilding,
+  fetchBuildings,
+  renameBuilding,
   addPayment,
   addUnitToFloor,
   deleteFloor,
@@ -24,7 +28,7 @@ import {
   type Unit,
 } from "@/lib/units";
 import { supabase } from "@/integrations/supabase/client";
-import { LogOut, Link2, Plus } from "lucide-react";
+import { LogOut, Link2, Plus, Building2, PencilRuler, Pencil, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/pregled")({
   head: () => ({
@@ -49,17 +53,26 @@ function Pregled() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [joinMode, setJoinMode] = useState(false);
   const [joinSelection, setJoinSelection] = useState<string[]>([]);
+  const [editMode, setEditMode] = useState(false);
+  const [buildingId, setBuildingId] = useState<string | null>(null);
+  const buildingsQ = useQuery({ queryKey: ["buildings"], queryFn: fetchBuildings });
+  const buildings = useMemo(() => buildingsQ.data ?? [], [buildingsQ.data]);
+  const currentBuilding = buildings.find((b) => b.id === buildingId) ?? buildings[0] ?? null;
 
   const unitsQ = useQuery({ queryKey: ["units"], queryFn: fetchUnits });
   const paymentsQ = useQuery({ queryKey: ["payments"], queryFn: fetchPayments });
 
-  const units = useMemo(() => unitsQ.data ?? [], [unitsQ.data]);
+  const units = useMemo(
+    () => (unitsQ.data ?? []).filter((u) => u.building_id === currentBuilding?.id),
+    [unitsQ.data, currentBuilding?.id],
+  );
   const payments = useMemo(() => paymentsQ.data ?? [], [paymentsQ.data]);
   const active = units.find((u) => u.id === activeId) ?? null;
 
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["units"] });
     qc.invalidateQueries({ queryKey: ["payments"] });
+    qc.invalidateQueries({ queryKey: ["buildings"] });
   };
 
   const run = useMutation({
@@ -109,6 +122,69 @@ function Pregled() {
       </header>
 
       <main className="mx-auto max-w-7xl px-4 py-6">
+        <div className="mb-5 flex flex-wrap items-center gap-2">
+          {buildings.map((b) => (
+            <Button
+              key={b.id}
+              size="sm"
+              variant={currentBuilding?.id === b.id ? "default" : "outline"}
+              onClick={() => {
+                setBuildingId(b.id);
+                setActiveId(null);
+              }}
+              onDoubleClick={() => {
+                const name = prompt("Naziv zgrade", b.name);
+                if (name?.trim()) run.mutate(() => renameBuilding(b.id, name.trim()));
+              }}
+            >
+              <Building2 className="size-4" /> {b.name}
+            </Button>
+          ))}
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() =>
+              run.mutate(async () => {
+                const id = await addBuilding(`Zgrada ${buildings.length + 1}`, buildings.length);
+                setBuildingId(id);
+                setActiveId(null);
+              })
+            }
+          >
+            <Plus className="size-4" /> Zgrada
+          </Button>
+          {currentBuilding ? (
+            <div className="ml-auto flex items-center gap-1">
+              <Button
+                size="icon"
+                variant="ghost"
+                aria-label="Preimenuj zgradu"
+                onClick={() => {
+                  const name = prompt("Naziv zgrade", currentBuilding.name);
+                  if (name?.trim()) run.mutate(() => renameBuilding(currentBuilding.id, name.trim()));
+                }}
+              >
+                <Pencil className="size-4" />
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                aria-label="Obriši zgradu"
+                onClick={() => {
+                  if (!confirm(`Obrisati ${currentBuilding.name} i sve njene stanove?`)) return;
+                  run.mutate(async () => {
+                    await deleteBuilding(currentBuilding.id);
+                    setBuildingId(null);
+                    setActiveId(null);
+                  });
+                }}
+              >
+                <Trash2 className="size-4" />
+              </Button>
+            </div>
+          ) : null}
+        </div>
+
         <div className="animate-rise grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Stat label="Ukupna vrijednost" value={eur(totals.total)} />
           <Stat label="Uplaćeno" value={eur(totals.paid)} />
@@ -122,6 +198,7 @@ function Pregled() {
             size="sm"
             onClick={() => {
               setJoinMode(!joinMode);
+              setEditMode(false);
               setJoinSelection([]);
             }}
           >
@@ -149,11 +226,24 @@ function Pregled() {
             </Button>
           ) : null}
           <Button
+            variant={editMode ? "default" : "outline"}
+            size="sm"
+            onClick={() => {
+              setEditMode(!editMode);
+              setJoinMode(false);
+            }}
+          >
+            <PencilRuler className="size-4" />
+            {editMode ? "Završi uređivanje" : "Uredi raspored"}
+          </Button>
+          <Button
             variant="outline"
             size="sm"
+            disabled={!currentBuilding}
             onClick={() =>
               run.mutate(async () => {
-                await addFloor(nextFloor);
+                if (!currentBuilding) return;
+                await addFloor(nextFloor, currentBuilding.id);
                 toast.success(`Dodan ${nextFloor}. sprat`);
               })
             }
@@ -168,6 +258,8 @@ function Pregled() {
             payments={payments}
             activeId={activeId}
             joinMode={joinMode}
+            editMode={editMode}
+            onLayout={(id, layout) => run.mutate(() => updateUnit(id, layout))}
             joinSelection={joinSelection}
             onSelect={(u: Unit) => setActiveId(u.id)}
             onToggleJoin={(id) =>
@@ -175,17 +267,18 @@ function Pregled() {
             }
             onDeleteFloor={(floor) =>
               run.mutate(async () => {
-                await deleteFloor(floor);
+                if (!confirm(`Obrisati ${floor}. sprat?`)) return;
+                await deleteFloor(floor, currentBuilding!.id);
                 setActiveId(null);
                 toast.success("Sprat obrisan");
               })
             }
-            onAddUnit={(floor) =>
+            onAddUnit={(floor, layout) =>
               run.mutate(async () => {
                 const onFloor = units.filter((u) => u.floor === floor);
                 const block = onFloor.length ? Math.max(...onFloor.map((u) => u.block)) : 1;
-                const slot = onFloor.filter((u) => u.block === block).length + 1;
-                await addUnitToFloor(floor, block, slot, `${floor}-${onFloor.length + 1}`);
+                const slot = Math.max(0, ...onFloor.map((u) => u.slot)) + 1;
+                await addUnitToFloor(floor, block, slot, `${floor}-${onFloor.length + 1}`, currentBuilding!.id, layout);
               })
             }
           />

@@ -8,6 +8,13 @@
       "when": 1790717767063,
       "tag": "0000_create_am_premium_units",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790843322619,
+      "tag": "0001_buildings_and_layout",
+      "breakpoints": true
     }
   ]
 }
