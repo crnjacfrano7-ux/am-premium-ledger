@@ -12,7 +12,36 @@ export type Unit = {
   buyer_name: string;
   note: string;
   group_id: string | null;
+  building_id: string | null;
+  grid_x: number | null;
+  grid_y: number | null;
+  grid_w: number | null;
+  grid_h: number | null;
 };
+
+export type Building = { id: string; name: string; position: number };
+
+export async function fetchBuildings(): Promise<Building[]> {
+  const { data, error } = await supabase.from("buildings").select("id,name,position").order("position").order("created_at");
+  if (error) throw error;
+  return (data ?? []) as Building[];
+}
+
+export async function addBuilding(name: string, position: number) {
+  const { data, error } = await supabase.from("buildings").insert({ name, position }).select("id").single();
+  if (error) throw error;
+  return data.id as string;
+}
+
+export async function renameBuilding(id: string, name: string) {
+  const { error } = await supabase.from("buildings").update({ name }).eq("id", id);
+  if (error) throw error;
+}
+
+export async function deleteBuilding(id: string) {
+  const { error } = await supabase.from("buildings").delete().eq("id", id);
+  if (error) throw error;
+}
 
 export type Payment = {
   id: string;
@@ -27,7 +56,7 @@ export type UnitGroup = { id: string; name: string };
 export async function fetchUnits(): Promise<Unit[]> {
   const { data, error } = await supabase
     .from("units")
-    .select("id,floor,block,slot,label,sqm,price_per_sqm,status,buyer_name,note,group_id")
+    .select("id,floor,block,slot,label,sqm,price_per_sqm,status,buyer_name,note,group_id,building_id,grid_x,grid_y,grid_w,grid_h")
     .order("floor", { ascending: false })
     .order("block")
     .order("slot");
@@ -86,20 +115,28 @@ export async function leaveGroup(unitId: string) {
   if (error) throw error;
 }
 
-export async function addFloor(floor: number, blocks = 3, slots = 2) {
-  const letters = "ABCDEFGHIJ";
-  const rows: { floor: number; block: number; slot: number; label: string }[] = [];
-  for (let b = 1; b <= blocks; b++) {
-    for (let s = 1; s <= slots; s++) {
-      rows.push({ floor, block: b, slot: s, label: `${floor}-${letters[(b - 1) * slots + (s - 1)]}` });
-    }
-  }
+export const DEFAULT_LAYOUT = [
+  { grid_x: 0, grid_y: 0, grid_w: 4, grid_h: 2 },
+  { grid_x: 0, grid_y: 2, grid_w: 4, grid_h: 2 },
+  { grid_x: 4, grid_y: 0, grid_w: 4, grid_h: 2 },
+  { grid_x: 8, grid_y: 0, grid_w: 4, grid_h: 2 },
+  { grid_x: 8, grid_y: 2, grid_w: 4, grid_h: 2 },
+];
+
+export async function addFloor(floor: number, buildingId: string) {
+  const letters = "ABCDE";
+  const rows = DEFAULT_LAYOUT.map((l, i) => ({
+    floor, block: 1, slot: i + 1, label: `${floor}-${letters[i]}`, building_id: buildingId, ...l,
+  }));
   const { error } = await supabase.from("units").insert(rows);
   if (error) throw error;
 }
 
-export async function addUnitToFloor(floor: number, block: number, slot: number, label: string) {
-  const { error } = await supabase.from("units").insert({ floor, block, slot, label });
+export async function addUnitToFloor(
+  floor: number, block: number, slot: number, label: string, buildingId: string,
+  layout: { grid_x: number; grid_y: number; grid_w: number; grid_h: number },
+) {
+  const { error } = await supabase.from("units").insert({ floor, block, slot, label, building_id: buildingId, ...layout });
   if (error) throw error;
 }
 
@@ -108,8 +145,8 @@ export async function deleteUnit(id: string) {
   if (error) throw error;
 }
 
-export async function deleteFloor(floor: number) {
-  const { error } = await supabase.from("units").delete().eq("floor", floor);
+export async function deleteFloor(floor: number, buildingId: string) {
+  const { error } = await supabase.from("units").delete().eq("floor", floor).eq("building_id", buildingId);
   if (error) throw error;
 }
 
