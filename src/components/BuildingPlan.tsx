@@ -37,7 +37,7 @@ function layoutsFor(units: Unit[]): Map<string, Layout> {
     if (u.grid_x != null && u.grid_y != null && u.grid_w && u.grid_h) {
       map.set(u.id, { grid_x: u.grid_x, grid_y: u.grid_y, grid_w: u.grid_w, grid_h: u.grid_h });
     } else if (i < DEFAULT_LAYOUT.length) {
-      map.set(u.id, DEFAULT_LAYOUT[i]);
+      map.set(u.id, DEFAULT_LAYOUT[i]!);
     } else {
       map.set(u.id, { grid_x: ((i - 5) % 3) * 4, grid_y: extraY, grid_w: 4, grid_h: 2 });
       if ((i - 5) % 3 === 2) extraY += 2;
