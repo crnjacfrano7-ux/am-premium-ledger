@@ -198,6 +198,7 @@ function Pregled() {
             size="sm"
             onClick={() => {
               setJoinMode(!joinMode);
+              setEditMode(false);
               setJoinSelection([]);
             }}
           >
