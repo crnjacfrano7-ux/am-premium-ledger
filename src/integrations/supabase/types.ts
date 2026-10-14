@@ -20,18 +20,21 @@ export type Database = {
           id: string
           name: string
           position: number
+          staircase_layouts: Json
         }
         Insert: {
           created_at?: string
           id?: string
           name?: string
           position?: number
+          staircase_layouts?: Json
         }
         Update: {
           created_at?: string
           id?: string
           name?: string
           position?: number
+          staircase_layouts?: Json
         }
         Relationships: []
       }

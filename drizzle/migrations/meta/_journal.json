@@ -15,6 +15,13 @@
       "when": 1790843322619,
       "tag": "0001_buildings_and_layout",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791991695425,
+      "tag": "0002_building_staircase_layouts",
+      "breakpoints": true
     }
   ]
 }

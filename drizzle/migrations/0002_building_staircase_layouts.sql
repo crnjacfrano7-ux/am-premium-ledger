@@ -1,0 +1,1 @@
+ALTER TABLE public.buildings ADD COLUMN staircase_layouts jsonb NOT NULL DEFAULT '{}'::jsonb;
