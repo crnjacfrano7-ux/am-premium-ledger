@@ -11,9 +11,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { X, Trash2, Unlink } from "lucide-react";
+import { X, Trash2, Unlink, RotateCcw } from "lucide-react";
 import { eur, sqm, dateBs, STATUSES } from "@/lib/format";
-import { paidFor, unitTotal, type Payment, type Unit } from "@/lib/units";
+import { apartmentLabel, paidFor, unitTotal, type Payment, type Unit } from "@/lib/units";
 
 type Props = {
   unit: Unit;
@@ -43,6 +43,14 @@ export function UnitPanel({
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [payNote, setPayNote] = useState("");
+  const [label, setLabel] = useState(unit.label);
+
+  useEffect(() => setLabel(unit.label), [unit.id, unit.label]);
+  const saveLabel = () => {
+    const next = label.trim() || apartmentLabel(unit.floor, unit.slot);
+    setLabel(next);
+    if (next !== unit.label) onPatch({ label: next });
+  };
 
   useEffect(() => {
     setArea(unit.sqm);
@@ -135,8 +143,19 @@ export function UnitPanel({
 
         <div className="grid gap-4">
           <div className="space-y-2">
-            <Label>Oznaka</Label>
-            <Input value={unit.label} onChange={(e) => onPatch({ label: e.target.value })} />
+            <Label htmlFor="unit-label">Oznaka stana</Label>
+            <div className="flex gap-2">
+              <Input id="unit-label" value={label} maxLength={40}
+                placeholder={apartmentLabel(unit.floor, unit.slot)}
+                onChange={(e) => setLabel(e.target.value)} onBlur={saveLabel}
+                onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }} />
+              <Button variant="outline" size="icon" title="Vrati standardnu oznaku" aria-label="Vrati standardnu oznaku"
+                onClick={() => {
+                  const standard = apartmentLabel(unit.floor, unit.slot);
+                  setLabel(standard);
+                  onPatch({ label: standard });
+                }}><RotateCcw className="size-4" /></Button>
+            </div>
           </div>
           <div className="space-y-2">
             <Label>Status</Label>

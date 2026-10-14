@@ -26,6 +26,7 @@ import {
   removePayment,
   unitTotal,
   updateUnit,
+  updateStaircaseLayouts,
   type Unit,
 } from "@/lib/units";
 import { supabase } from "@/integrations/supabase/client";
@@ -255,12 +256,18 @@ function Pregled() {
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_380px]">
           <BuildingPlan
+            key={currentBuilding?.id ?? "empty"}
             units={units}
             payments={payments}
             activeId={activeId}
             joinMode={joinMode}
             editMode={editMode}
             onLayout={(id, layout) => run.mutate(() => updateUnit(id, layout))}
+            staircaseLayouts={currentBuilding?.staircase_layouts ?? {}}
+            onStairLayout={(floor, layout) => run.mutate(async () => {
+              if (!currentBuilding) return;
+              await updateStaircaseLayouts(currentBuilding.id, { ...currentBuilding.staircase_layouts, [floor]: layout });
+            })}
             joinSelection={joinSelection}
             onSelect={(u: Unit) => setActiveId(u.id)}
             onToggleJoin={(id) =>
@@ -281,7 +288,7 @@ function Pregled() {
                 const onFloor = units.filter((u) => u.floor === floor);
                 const block = onFloor.length ? Math.max(...onFloor.map((u) => u.block)) : 1;
                 const slot = Math.max(0, ...onFloor.map((u) => u.slot)) + 1;
-                const number = Math.max(0, ...onFloor.map((u) => Number(u.label.slice(String(floor).length)) || 0)) + 1;
+                const number = slot;
                 await addUnitToFloor(floor, block, slot, apartmentLabel(floor, number), currentBuilding.id, layout);
               })
             }

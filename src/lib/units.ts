@@ -19,12 +19,18 @@ export type Unit = {
   grid_h: number | null;
 };
 
-export type Building = { id: string; name: string; position: number };
+export type StairLayout = { grid_x: number; grid_y: number; grid_w: number; grid_h: number };
+export type Building = { id: string; name: string; position: number; staircase_layouts: Record<string, StairLayout> };
 
 export async function fetchBuildings(): Promise<Building[]> {
-  const { data, error } = await supabase.from("buildings").select("id,name,position").order("position").order("created_at");
+  const { data, error } = await supabase.from("buildings").select("id,name,position,staircase_layouts").order("position").order("created_at");
   if (error) throw error;
-  return (data ?? []) as Building[];
+  return (data ?? []) as unknown as Building[];
+}
+
+export async function updateStaircaseLayouts(id: string, layouts: Record<string, StairLayout>) {
+  const { error } = await supabase.from("buildings").update({ staircase_layouts: layouts }).eq("id", id);
+  if (error) throw error;
 }
 
 export async function addBuilding(name: string, position: number) {
