@@ -123,10 +123,13 @@ export const DEFAULT_LAYOUT = [
   { grid_x: 8, grid_y: 2, grid_w: 4, grid_h: 2 },
 ];
 
+export function apartmentLabel(floor: number, number: number): string {
+  return `${floor}${String(number).padStart(2, "0")}`;
+}
+
 export async function addFloor(floor: number, buildingId: string) {
-  const letters = "ABCDE";
   const rows = DEFAULT_LAYOUT.map((l, i) => ({
-    floor, block: 1, slot: i + 1, label: `${floor}-${letters[i]}`, building_id: buildingId, ...l,
+    floor, block: 1, slot: i + 1, label: apartmentLabel(floor, i + 1), building_id: buildingId, ...l,
   }));
   const { error } = await supabase.from("units").insert(rows);
   if (error) throw error;
