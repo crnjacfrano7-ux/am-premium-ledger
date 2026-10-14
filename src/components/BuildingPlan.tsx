@@ -94,7 +94,13 @@ function FloorCanvas({
   const base = layoutsFor(units);
   const get = (id: string): Layout =>
     drag?.id === id ? drag.cur : (overrides[id] ?? base.get(id) ?? { grid_x: 0, grid_y: 0, grid_w: 4, grid_h: 2 });
-  const rows = Math.max(4, ...units.map((u) => get(u.id).grid_y + get(u.id).grid_h));
+  const unitRows = Math.max(4, ...units.map((u) => get(u.id).grid_y + get(u.id).grid_h));
+  let stairY = 2;
+  while (stairY < unitRows && units.some((u) => {
+    const l = get(u.id);
+    return l.grid_x < 8 && l.grid_x + l.grid_w > 4 && l.grid_y < stairY + 2 && l.grid_y + l.grid_h > stairY;
+  })) stairY += 1;
+  const rows = Math.max(unitRows, stairY + 2);
 
   const down = (e: React.PointerEvent, id: string, mode: Drag["mode"]) => {
     if (!editMode) return;
@@ -145,7 +151,7 @@ function FloorCanvas({
         onPointerUp={up}
         onPointerCancel={up}
       >
-        <div className="stair-core" role="img" aria-label="Stubište u sredini kata">
+        <div className="stair-core" style={{ top: stairY * ROW + 2 }} role="img" aria-label="Stubište u sredini kata">
           <div className="stair-flight stair-flight-up" aria-hidden="true" />
           <div className="stair-landing" aria-hidden="true" />
           <div className="stair-flight stair-flight-down" aria-hidden="true" />
