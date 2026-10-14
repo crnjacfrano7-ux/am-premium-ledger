@@ -220,11 +220,51 @@
     background-image:
       linear-gradient(to right, color-mix(in oklab, var(--foreground) 8%, transparent) 1px, transparent 1px),
       linear-gradient(to bottom, color-mix(in oklab, var(--foreground) 8%, transparent) 1px, transparent 1px);
-    background-size: calc(100% / 12) 34px;
+    background-size: calc(100% / 12) 46px;
     background-position: 0 2px;
   }
 
   .floor-canvas-edit .floor-unit { cursor: grab; touch-action: none; }
+
+  .stair-core {
+    position: absolute;
+    left: calc(100% / 3);
+    top: 94px;
+    width: calc(100% / 3);
+    height: 92px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 16px 1fr 18px;
+    gap: 0 8px;
+    padding: 6px 12px 2px;
+    color: var(--muted-foreground);
+    pointer-events: none;
+  }
+
+  .stair-flight {
+    position: relative;
+    grid-row: 2;
+    border: 1px solid currentColor;
+    background: repeating-linear-gradient(to bottom, transparent 0 7px, var(--muted-foreground) 7px 8px);
+  }
+
+  .stair-flight::after {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    color: var(--foreground);
+    text-shadow: 0 1px var(--secondary), 1px 0 var(--secondary);
+  }
+
+  .stair-flight-up { grid-column: 1; }
+  .stair-flight-down { grid-column: 2; }
+  .stair-flight-up::after { content: "↑"; }
+  .stair-flight-down::after { content: "↓"; }
+  .stair-landing { grid-row: 1; grid-column: 1 / -1; border: 1px solid currentColor; border-bottom: 0; }
+  .stair-caption { grid-row: 3; grid-column: 1 / -1; text-align: center; align-self: center; font-size: 0.5rem; letter-spacing: 0; }
 
   .floor-unit {
     position: absolute;
@@ -309,8 +349,16 @@
   }
 
   .floor-unit-area {
-    font-size: 0.62rem;
-    opacity: 0.72;
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+
+  .floor-unit-payment {
+    max-width: 100%;
+    font-size: 0.6rem;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+    opacity: 0.8;
   }
 
   .floor-unit-progress {
@@ -362,7 +410,9 @@
     .floor-number strong { font-size: 1.25rem; }
     .floor-unit { padding: 7px; }
     .floor-unit-label { font-size: 0.85rem; }
-    .floor-unit-area { font-size: 0.55rem; }
+    .floor-unit-area { font-size: 0.65rem; }
+    .floor-unit-payment { font-size: 0.55rem; }
+    .stair-core { padding-inline: 7px; gap: 0 5px; }
     .building-roof { margin-inline: 38px; }
     .floor-actions { padding-left: 10px; padding-right: 10px; }
   }

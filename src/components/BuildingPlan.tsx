@@ -22,7 +22,7 @@ type Props = {
 };
 
 const COLS = 12;
-const ROW = 34;
+const ROW = 46;
 
 function statusClasses(u: Unit, pct: number) {
   if (u.status === "prodan") return "floor-unit-sold";
@@ -37,7 +37,7 @@ function layoutsFor(units: Unit[]): Map<string, Layout> {
     if (u.grid_x != null && u.grid_y != null && u.grid_w && u.grid_h) {
       map.set(u.id, { grid_x: u.grid_x, grid_y: u.grid_y, grid_w: u.grid_w, grid_h: u.grid_h });
     } else if (i < DEFAULT_LAYOUT.length) {
-      map.set(u.id, DEFAULT_LAYOUT[i]!);
+      map.set(u.id, DEFAULT_LAYOUT[i] ?? DEFAULT_LAYOUT[0] ?? { grid_x: 0, grid_y: 0, grid_w: 4, grid_h: 2 });
     } else {
       map.set(u.id, { grid_x: ((i - 5) % 3) * 4, grid_y: extraY, grid_w: 4, grid_h: 2 });
       if ((i - 5) % 3 === 2) extraY += 2;
@@ -93,7 +93,7 @@ function FloorCanvas({
   const [overrides, setOverrides] = useState<Record<string, Layout>>({});
   const base = layoutsFor(units);
   const get = (id: string): Layout =>
-    drag?.id === id ? drag.cur : (overrides[id] ?? base.get(id)!);
+    drag?.id === id ? drag.cur : (overrides[id] ?? base.get(id) ?? { grid_x: 0, grid_y: 0, grid_w: 4, grid_h: 2 });
   const rows = Math.max(4, ...units.map((u) => get(u.id).grid_y + get(u.id).grid_h));
 
   const down = (e: React.PointerEvent, id: string, mode: Drag["mode"]) => {
@@ -145,6 +145,12 @@ function FloorCanvas({
         onPointerUp={up}
         onPointerCancel={up}
       >
+        <div className="stair-core" role="img" aria-label="Stubište u sredini kata">
+          <div className="stair-flight stair-flight-up" aria-hidden="true" />
+          <div className="stair-landing" aria-hidden="true" />
+          <div className="stair-flight stair-flight-down" aria-hidden="true" />
+          <span className="stair-caption">STUBIŠTE</span>
+        </div>
         {units.map((u) => {
           const l = get(u.id);
           const total = unitTotal(u);
@@ -180,9 +186,8 @@ function FloorCanvas({
             >
               <span className="floor-unit-label">{u.label}</span>
               {u.buyer_name ? <span className="floor-unit-buyer">{u.buyer_name}</span> : null}
-              <span className="floor-unit-area">
-                {paid > 0 ? `${eur(paid)} / ${eur(total)}` : sqm(u.sqm)}
-              </span>
+              <span className="floor-unit-area">{sqm(u.sqm)}</span>
+              {paid > 0 ? <span className="floor-unit-payment">{eur(paid)} / {eur(total)}</span> : null}
               <span className="floor-unit-progress" aria-hidden="true">
                 <span style={{ width: `${pct}%` }} />
               </span>

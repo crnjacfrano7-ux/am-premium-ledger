@@ -9,6 +9,7 @@ import logo from "@/assets/am-premium-logo.jpg.asset.json";
 import { eur } from "@/lib/format";
 import {
   addBuilding,
+  apartmentLabel,
   addFloor,
   deleteBuilding,
   fetchBuildings,
@@ -267,18 +268,21 @@ function Pregled() {
             }
             onDeleteFloor={(floor) =>
               run.mutate(async () => {
+                if (!currentBuilding) return;
                 if (!confirm(`Obrisati ${floor}. sprat?`)) return;
-                await deleteFloor(floor, currentBuilding!.id);
+                await deleteFloor(floor, currentBuilding.id);
                 setActiveId(null);
                 toast.success("Sprat obrisan");
               })
             }
             onAddUnit={(floor, layout) =>
               run.mutate(async () => {
+                if (!currentBuilding) return;
                 const onFloor = units.filter((u) => u.floor === floor);
                 const block = onFloor.length ? Math.max(...onFloor.map((u) => u.block)) : 1;
                 const slot = Math.max(0, ...onFloor.map((u) => u.slot)) + 1;
-                await addUnitToFloor(floor, block, slot, `${floor}-${onFloor.length + 1}`, currentBuilding!.id, layout);
+                const number = Math.max(0, ...onFloor.map((u) => Number(u.label.slice(String(floor).length)) || 0)) + 1;
+                await addUnitToFloor(floor, block, slot, apartmentLabel(floor, number), currentBuilding.id, layout);
               })
             }
           />
