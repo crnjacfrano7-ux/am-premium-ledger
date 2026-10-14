@@ -19,6 +19,8 @@ type Props = {
   onDeleteFloor: (floor: number) => void;
   onAddUnit: (floor: number, layout: Layout) => void;
   onLayout: (id: string, layout: Layout) => void;
+  staircaseLayouts: Record<string, Layout>;
+  onStairLayout: (floor: number, layout: Layout) => void;
 };
 
 const COLS = 12;
@@ -87,6 +89,8 @@ function FloorCanvas({
   onDeleteFloor,
   onAddUnit,
   onLayout,
+  staircaseLayouts,
+  onStairLayout,
 }: Props & { floor: number; index: number }) {
   const ref = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<Drag | null>(null);
@@ -100,14 +104,17 @@ function FloorCanvas({
     const l = get(u.id);
     return l.grid_x < 8 && l.grid_x + l.grid_w > 4 && l.grid_y < stairY + 2 && l.grid_y + l.grid_h > stairY;
   })) stairY += 1;
-  const rows = Math.max(unitRows, stairY + 2);
+  const stairId = "staircase";
+  const defaultStair = { grid_x: 4, grid_y: stairY, grid_w: 4, grid_h: 2 };
+  const stair = drag?.id === stairId ? drag.cur : (overrides[stairId] ?? staircaseLayouts[String(floor)] ?? defaultStair);
+  const rows = Math.max(unitRows, stair.grid_y + stair.grid_h);
 
   const down = (e: React.PointerEvent, id: string, mode: Drag["mode"]) => {
     if (!editMode) return;
     e.preventDefault();
     e.stopPropagation();
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    const start = get(id);
+    const start = id === stairId ? stair : get(id);
     setDrag({ id, mode, sx: e.clientX, sy: e.clientY, start, cur: start });
   };
 
@@ -130,7 +137,8 @@ function FloorCanvas({
     setDrag(null);
     if (JSON.stringify(cur) !== JSON.stringify(start)) {
       setOverrides((o) => ({ ...o, [id]: cur }));
-      onLayout(id, cur);
+      if (id === stairId) onStairLayout(floor, cur);
+      else onLayout(id, cur);
     }
   };
 
@@ -151,12 +159,26 @@ function FloorCanvas({
         onPointerUp={up}
         onPointerCancel={up}
       >
-        <div className="stair-core" style={{ top: stairY * ROW + 2 }} role="img" aria-label="Stubište u sredini kata">
+        <div className="stair-core" style={{
+          left: `${stair.grid_x / COLS * 100}%`, width: `${stair.grid_w / COLS * 100}%`,
+          top: stair.grid_y * ROW + 2, height: stair.grid_h * ROW,
+        }} role="img" aria-label="Stubište">
           <div className="stair-flight stair-flight-up" aria-hidden="true" />
           <div className="stair-landing" aria-hidden="true" />
           <div className="stair-flight stair-flight-down" aria-hidden="true" />
           <span className="stair-caption">STUBIŠTE</span>
         </div>
+        {editMode ? (
+          <div className="stair-editor" style={{
+            left: `${stair.grid_x / COLS * 100}%`, width: `${stair.grid_w / COLS * 100}%`,
+            top: stair.grid_y * ROW + 2, height: stair.grid_h * ROW,
+          }}>
+            <Button variant="ghost" className="stair-move" aria-label={`Pomjeri stubište ${floor}. sprata`}
+              title="Pomjeri stubište" onPointerDown={(e) => down(e, stairId, "move")} />
+            <Button variant="ghost" size="icon" className="stair-resize" aria-label={`Promijeni veličinu stubišta ${floor}. sprata`}
+              title="Promijeni veličinu stubišta" onPointerDown={(e) => down(e, stairId, "resize")} />
+          </div>
+        ) : null}
         {units.map((u) => {
           const l = get(u.id);
           const total = unitTotal(u);

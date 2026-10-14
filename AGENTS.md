@@ -12,3 +12,5 @@
 - Render apartment inventory as a five-unit architectural floor schematic matching the supplied drawing; keep any additional stored units accessible below their floor to avoid data loss.
 - Generate new apartment labels through the shared apartmentLabel helper; this keeps floor and added-unit numbering consistent.
 - Render the central staircase as a non-interactive layer below editable units so orientation cues do not intercept selection or dragging.
+- Store staircase layouts by floor on each building; edit-mode handles stay below units so persisted orientation changes do not intercept apartment selection.
+- Save custom apartment labels on blur or Enter and derive default labels from floor and slot, not user-edited names, to preserve automatic numbering.
